@@ -1,12 +1,12 @@
 #!/usr/bin/perl
 #===============================================================================
-# Auteur : khalil1fs
-# Date   : 04/03/2011
-# But    : Plugin vérifiant l'existence d'un fichier
+# Auteur : khalil1fs                                                           #                                                           #
+# Date   : 04/03/2011                                                          #
+# But    : Plugin vérifiant l'existence d'un fichier                           #
 #===============================================================================
 use strict;
 use warnings;
- 
+
 # Chargement du module
 use Monitoring::Plugin;
 use File::Basename;

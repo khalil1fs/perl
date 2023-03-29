@@ -32,10 +32,10 @@ for(keys %langs) {
     print("Official language of $_ is $langs{$_}\n");
 }
 
-if (1==1){
+if (1==10){
     print "1";
-}elsif(1==2) {
-    print "2";
+}elsif(1==2 || 1==1) {
+    print "--2--\n";
 }else {
     print "3";
 }
