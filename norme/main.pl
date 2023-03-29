@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 #===============================================================================
-# Auteur : djibril
-# Date   : 02/03/2011 22:42:13
-# But    : Exemple de plugin Nagios
+# Auteur : khalil1fs
+# Date   : 29/03/2023
+# But    : Exemple
 #===============================================================================
 use strict;
 use warnings;

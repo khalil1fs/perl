@@ -3,7 +3,7 @@
 # Auteur : khalil1fs
 # But    : Plugin Nagios permettant de vérifier l'existence d'un
 #          processus via le nom
-# Date   : 05/03/2011 12:38:44
+# Date   : 28/03/2023
 #==============================================================
  
 use warnings;
