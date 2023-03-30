@@ -8,10 +8,12 @@
 use warnings;
 use strict;
 use JSON;
+# https://perldoc.perl.org/Getopt::Long :Docs
 use Getopt::Long;
 use LWP::Simple;
 
-# perl job_checker.pl -w 2000 -c 5000 -u https://webhook.site/fef8ca9d-a0f7-46b4-b489-59efed2caea7
+# perl job_checker.pl -w 200 -c 500 -u https://webhook.site/fef8ca9d-a0f7-46b4-b489-59efed2caea7
+# perl job_checker.pl -w 200 -c 500 -u https://webhook.site/8ad01e63-34b3-4450-b165-ff6c6e225d95
 
 my $Name = "Data Checker";
 my $Version = "1.0.0";
@@ -53,18 +55,24 @@ sub check_ok_status {
    }
 }
 
+sub check_pending_status {
+   my ($job) = @_;
+   
+   if (get_status_by_timing($job->{'time'}) <= 1) {
+      push @{$jobs_by_status{'Pending'}}, $job;    
+   } else {
+      push @{$jobs_by_status{'Fail'}}, $job;
+   }
+}
+
 # prepare the list of jobs and group by ('Ok', 'Pending', 'Fail') status 
 sub prepare {
      foreach my $job (@{$result_array}) {
-         if ($job->{'status'} eq 'Ok') {
+      if ($job->{'status'} eq 'Ok') {
            check_ok_status($job);    
       }
       elsif ($job->{'status'} eq 'Pending') {
-         if (get_status_by_timing($job->{'time'}) <= 1) {
-           push @{$jobs_by_status{'Pending'}}, $job;    
-         } else {
-           push @{$jobs_by_status{'Fail'}}, $job;
-         }
+           check_pending_status($job);
       }
       elsif ($job->{'status'} eq 'Fail') {
            push @{$jobs_by_status{'Fail'}}, $job;
@@ -105,17 +113,24 @@ sub check_options {
     GetOptions(
         'h'     => \$o_help,    	   'help'        	=> \$o_help,
         'u:s'   => \$o_url,   		'url:s'	    => \$o_url,
-        'c:s'   => \$o_crit,        'critical:s'    => \$o_crit,
-        'w:s'   => \$o_warn,        'warn:s'        => \$o_warn,
-	);
+        'c:i'   => \$o_crit,        'critical:i'    => \$o_crit,
+        'w:i'   => \$o_warn,        'warn:i'        => \$o_warn,
+	) or die("Error in command line arguments\n");
 	
-    if (defined ($o_help)) { help(); exit(0)};
+    if (defined ($o_help)) { 
+       help();
+       exit(0);
+      };
 
-    if (!defined($o_url) || !defined($o_warn) || !defined($o_crit))
-        { print "Put all required params!\n"; print_usage(); exit(3)}
-	 
-    if ($o_crit < $o_warn)
-        { print "ATTENTION : critique < warning"; 	exit(3);}
+    if (!defined($o_url) || !defined($o_warn) || !defined($o_crit)) {
+       print "Put all required params!\n"; 
+       print_usage();
+       exit(3)
+     }
+    if ($o_crit < $o_warn) {
+       print "ATTENTION : critique < warning";
+       exit(3);
+     }
 }
 
 
