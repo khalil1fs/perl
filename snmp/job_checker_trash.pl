@@ -11,7 +11,6 @@ use JSON;
 use Getopt::Long;
 use LWP::Simple;
 
-# perl job_checker.pl -w 2000 -c 5000 -u https://webhook.site/fef8ca9d-a0f7-46b4-b489-59efed2caea7
 
 my $Name = "Data Checker";
 my $Version = "1.0.0";
@@ -37,18 +36,39 @@ my %jobs_by_status;
 prepare();
 
 # print the jobs grouped by status
-print_result('Ok', 0, @{$jobs_by_status{'Ok'}});
-print_result('Pending', 1, @{$jobs_by_status{'Pending'}});
-print_result('Fail', 2, @{$jobs_by_status{'Fail'}});
+print_result('Ok', @{$jobs_by_status{'Ok'}});
+print_result('Pending', @{$jobs_by_status{'Pending'}});
+print_result('Fail', @{$jobs_by_status{'Fail'}});
+
+   #  foreach my $job (@{$jobs_by_status{$status}}) {
+   #      print "\tName: $job->{'name'}, Time: $job->{'time'}\n";
+   #  }
+
+
+# foreach my $status (keys %jobs_by_status) {
+#    print "here: $status\n";
+#     print_result($status, @{$jobs_by_status{$status}});
+# }
+# print "@{$result_array}";
+
+#  This one work !
+
+# foreach my $job (@{$result_array}) {
+#     print "Name: $job->{'name'}\n";
+#     print "Time: $job->{'time'}\n";
+#     print "Status: $job->{'status'}\n";
+# }
+# foreach my $job (@{$result_array}) {
+#     push @{$jobs_by_status{$job->{'status'}}}, $job;
+# }
 
 
 sub prepare {
      foreach my $job (@{$result_array}) {
          if ($job->{'status'} eq 'Ok') {
-            my $status_by_timing = get_status_by_timing($job->{'time'});
-         if ($status_by_timing == 0) {
+         if (get_status_by_timing($job->{'time'}) == 0) {
            push @{$jobs_by_status{'Ok'}}, $job;
-         } elsif ($status_by_timing == 1) {
+         } elsif (get_status_by_timing($job->{'time'}) == 1) {
            push @{$jobs_by_status{'Pending'}}, $job;    
          } else {
            push @{$jobs_by_status{'Fail'}}, $job;
@@ -68,15 +88,16 @@ sub prepare {
 }
 
 sub print_result {
-    my ($status, $code, @jobs) = @_;
+    my ($status, @jobs) = @_;
     my $jobs_length = scalar(@jobs);
+    print "status: $status,  length: $jobs_length\n";
       if ($jobs_length == $total_jobs_length) {
-         print "All Jobs are $status, exit code $code\n";
+         print "\tAll Jobs are $status\n";
          exit(0);
     } elsif ($jobs_length > 0) {
-      print "Status: $status, code: $code\n";
+         print "Status: $status\n";
          foreach my $job (@jobs) {
-         print "\tName: $job->{'name'}, Timing: $job->{'time'}, state: $job->{'status'}\n";
+         print "\tName: $job->{'name'}, Time: $job->{'time'}\n";
        }
     }
 }
@@ -92,6 +113,23 @@ sub get_status_by_timing {
       return 0;
    }    
 }
+
+
+
+
+
+
+# my %data = @{$content{"result"}};
+# my @data = $cont->{"result"};
+# print %{$cont{"result"}};
+# print %data;
+# my $data = $cont->{"result"};
+# my @data = $decoded_data->{'result'};
+# foreach my $item (@$data) {
+#     print "$item ";
+# }
+# print "@decoded_data";
+
 
 sub check_options {
     Getopt::Long::Configure ("bundling");
