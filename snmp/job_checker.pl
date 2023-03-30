@@ -21,12 +21,14 @@ my $copyright = "Copyright © Khalil1fs 2023 - tous droits réservés.";
 my $o_help = undef; 		    # wan't some help ?
 my $o_regex = undef; 		    # Filter jobs names by regex
 my $o_datetime_filter = undef; 		    # Filter jobs names by regex
+my $time_delay = undef;
 my $o_url = undef; 		    # Request Url for jobs
 my $o_crit = undef; 		    # critical for critical status 
 my $o_warn = undef; 		    # critical for warnning status 
 my $exit_code = 0;
 
 check_options();
+
 
 my $response = get($o_url) or die 'Unable to get page';
 my $data = decode_json($response);
@@ -36,7 +38,7 @@ my $result_array = $data->{'result'};
 my $total_jobs_length = scalar(@{$result_array});
 my %jobs_by_status;
 
-# Prepare the list of jobs
+# Prepare and filter the list of jobs
 prepare();
 
 # print the jobs grouped by status
@@ -44,38 +46,37 @@ foreach my $s ('Fail', 'Pending', 'Ok') { # Critiqual, Warnning
    print_result($s, @{$jobs_by_status{$s}});
 }
 
-filter_by_name();
-filter_by_datetime();
 
 # print "$exit_code";
 exit($exit_code);
 
 sub filter_by_name {
+   my ($job) = @_;
    if (defined ($o_regex)) {
-      print "\nList of Job's filtered By Name:\n\n"; 
-        foreach my $job (@$result_array) {
-         if ($job->{'name'} =~ /$o_regex/) {
-         print "name: $job->{'name'}, timing: $job->{'time'}, state: $job->{'status'}\n";
+       if ($job->{'name'} =~ /$o_regex/) {
+         return 1;
+      }else {
+       return -1;
       }
-   }
+  } else {
+     return 1;
   }
 }
-
 
 sub filter_by_datetime {
+   my ($job) = @_;
    if (defined ($o_datetime_filter)) {
-         my $elapsed_time = get_time_in_milli();
-         print "\nList of Job's filtered By elapsed Time:\n\n"; 
-         my $time_delay = time() - $elapsed_time;
-        foreach my $job (@$result_array) {
-         if ($job->{'timestamp'} >= $time_delay) {
-         print "name: $job->{'name'}, timing: $job->{'time'}, state: $job->{'status'}, jot_timeStamp: $job->{'timestamp'} -- $time_delay\n";
+       if ($job->{'timestamp'} >= $time_delay) {
+         return 1;
+      }else {
+         return -1;
       }
-    }      
+  } else {
+     return 1;
   }
 }
 
-sub get_time_in_milli {
+sub get_time_in_sec {
     if ($o_datetime_filter =~ /(\d+)d(\d+)h(\d+)m/) {
       return $1 * 86400 + $2 * 3600 + $3 * 60;
    } else {
@@ -126,6 +127,7 @@ sub check_pending_status {
 # prepare the list of jobs and group by ('Ok', 'Pending', 'Fail') status 
 sub prepare {
      foreach my $job (@{$result_array}) {
+      if (filter_by_datetime($job) == 1 && filter_by_name($job) == 1){
       if ($job->{'status'} eq 'Ok') {
            check_ok_status($job);    
       }
@@ -137,6 +139,7 @@ sub prepare {
            $exit_code = 2;
       } 
     }
+  }
 }
 
 
@@ -166,7 +169,7 @@ sub check_options {
     if (defined ($o_help)) { 
        help();
        exit(0);
-      };
+      }
 
     if (!defined($o_url) || !defined($o_warn) || !defined($o_crit)) {
        print "Put all required params!\n"; 
@@ -176,6 +179,11 @@ sub check_options {
     if ($o_crit < $o_warn) {
        print "ATTENTION : critique < warning";
        exit(3);
+     }
+
+     if (defined ($o_datetime_filter)) { 
+        my $elapsed_time = get_time_in_sec();
+        $time_delay = time() - $elapsed_time;
      }
 }
 
