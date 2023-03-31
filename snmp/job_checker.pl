@@ -14,6 +14,7 @@ use LWP::Simple;
 
 # perl job_checker.pl -w 20 -c 50 -u https://webhook.site/fef8ca9d-a0f7-46b4-b489-59efed2caea7
 # perl job_checker.pl -w 200 -c 500 -u https://webhook.site/8ad01e63-34b3-4450-b165-ff6c6e225d95
+# perl job_checker.pl -w 200 -c 500 -u https://webhook.site/8ad01e63-34b3-4450-b165-ff6c6e225d95 -p 0d20h30m -n '.*'
 
 my $Name = "Data Checker";
 my $Version = "1.0.0";
@@ -30,7 +31,7 @@ my $exit_code = 0;
 check_options();
 
 
-my $response = get($o_url) or die 'Unable to get page';
+my $response = get($o_url) or die 'Unable to load data';
 my $data = decode_json($response);
 my $result_array = $data->{'result'};
 
@@ -42,12 +43,11 @@ my %jobs_by_status;
 prepare();
 
 # print the jobs grouped by status
-foreach my $s ('Fail', 'Pending', 'Ok') { # Critiqual, Warnning
-   print_result($s, @{$jobs_by_status{$s}});
-}
+print_result('Fail', 'Critiqual', @{$jobs_by_status{'Fail'}});
+print_result('Pending', 'Warnning', @{$jobs_by_status{'Pending'}});
+print_result('Ok', 'Ok', @{$jobs_by_status{'Ok'}});
 
 
-# print "$exit_code";
 exit($exit_code);
 
 sub filter_by_name {
@@ -87,10 +87,10 @@ sub get_time_in_sec {
 
 # print the final result
 sub print_result {
-    my ($status, @jobs) = @_;
+    my ($status, $reference, @jobs) = @_;
     my $jobs_length = scalar(@jobs);
     if ($jobs_length > 0) {
-      print "Status: " .get_status($status). "\n";
+      print "Status: $reference \n";
          foreach my $job (@jobs) {
          print "\tName: $job->{'name'}, Timing: $job->{'time'}, state: $job->{'status'}\n";
        }
@@ -104,8 +104,9 @@ sub check_ok_status {
    if ($status_by_timing == 0) {
       push @{$jobs_by_status{'Ok'}}, $job;
    } elsif ($status_by_timing == 1) {
-      push @{$jobs_by_status{'Pending'}}, $job;    
-      $exit_code = 1;
+      push @{$jobs_by_status{'Pending'}}, $job; 
+      if ($exit_code == 0) {     
+         $exit_code = 1;}
    } else {
       push @{$jobs_by_status{'Fail'}}, $job;
       $exit_code = 2;
@@ -117,7 +118,8 @@ sub check_pending_status {
    
    if (get_status_by_timing($job->{'time'}) <= 1) {
       push @{$jobs_by_status{'Pending'}}, $job;    
-      $exit_code = 1;
+      if ($exit_code == 0){      
+         $exit_code = 1;}
    } else {
       push @{$jobs_by_status{'Fail'}}, $job;
       $exit_code = 2;
@@ -187,20 +189,8 @@ sub check_options {
      }
 }
 
-
-sub get_status {
-   my ($status) = @_;
-   if ($status eq "Fail"){
-      return "Critiqual";
-   }elsif ($status eq "Pending") {
-      return "Warnning";
-   }else {
-      return "Ok";
-   }
-}
-
 sub print_usage {
-    print "Usage: $Name -u <request url for jobs> -w <warn level> -c <crit level>\n";
+    print "Usage: $Name -u <request url for jobs> -w <warn level> -c <crit level> -p <filter by date '1d2h3m'> -n <filter by regex path>\n";
 }
 
 sub help {
@@ -211,6 +201,8 @@ sub help {
 -h, --help
    print this help message 
 -w, --warn=INTEGER | INT,INT,INT
+-p, --warn=INTEGER | INT,INT,INT
+-n, --warn=INTEGER | INT,INT,INT
    warning level for job timing
 -c, --crit=INTEGER | INT,INT,INT
    critical level for job timing 
